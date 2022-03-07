@@ -48,7 +48,7 @@ using Socket = int;
 #define SERVERPRINT_INFO std::cout
 
 #define MAX_EXE_LEN 200
-#define MAX_KEEP_ALIVE 3000
+#define MAX_KEEP_ALIVE 200
 #define MAX_THREAD_COUNT 8
 #define MAX_PACKAGE_LENGTH 1024
 #define MAX_POST_LENGTH 1024*256
