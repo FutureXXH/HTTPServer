@@ -1,7 +1,9 @@
 #ifndef __IDefine_H
 #define __IDefine_H
 
-#define _DEBUG_INFOPRINT
+//#define _DEBUG_INFOPRINT
+
+#define USEMYSQL
 
 
 #ifdef ___WIN32_
@@ -13,6 +15,8 @@ using Socket = SOCKET;
 
 
 #else
+#define _atoi64(val)     strtoll(val, NULL, 10)  
+#include <signal.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <netinet/tcp.h>
@@ -48,7 +52,7 @@ using Socket = int;
 #define SERVERPRINT_INFO std::cout
 
 #define MAX_EXE_LEN 200
-#define MAX_KEEP_ALIVE 200
+#define MAX_KEEP_ALIVE 500
 #define MAX_THREAD_COUNT 8
 #define MAX_PACKAGE_LENGTH 1024
 #define MAX_POST_LENGTH 1024*256

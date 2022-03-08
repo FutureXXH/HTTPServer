@@ -41,7 +41,7 @@ int db::MysqlConnector::ExceQuery(const std::string& pData)
     //查询结果如果返回非0 则失败
     if (ret != 0)
     {
-        std::cout << "解析指令出现问题:" << GetErrorStr() << std::endl;
+        std::cout << "Mysql Command err:" << GetErrorStr() << std::endl;
         return ret;
     }
     
@@ -50,13 +50,13 @@ int db::MysqlConnector::ExceQuery(const std::string& pData)
     myres = mysql_store_result(mysql);
     if (myres == nullptr)
     {
-        std::cout << "查询错误" << std::endl;
+        std::cout << "query err" << std::endl;
         return -1;
     }
     fields = mysql_num_fields(myres);
     rows = static_cast<int>(mysql_affected_rows(mysql));
     GetQueryFields();
-    std::cout << "查询成功" << std::endl;
+    std::cout << "query finish" << std::endl;
     return 0;
 }
 
@@ -169,14 +169,14 @@ bool db::MysqlConnector::ReConnect()
             return true;
         }
         isGetErrorCode = false;
-        std::cout << "ip可以连接 但没有成功连接上mysql" << std::endl;
+        std::cout << "ip can connect ， but cant connect mysql" << std::endl;
         return false;
     }
     //初次连接初始化
     mysql = mysql_init(NULL);
     if (mysql == NULL)
     {
-        std::cout << "mysql初始化失败" << GetErrorStr() << std::endl;
+        std::cout << "mysql init err" << GetErrorStr() << std::endl;
         return false;
     }
     char value = 1;

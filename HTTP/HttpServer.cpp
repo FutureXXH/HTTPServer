@@ -60,7 +60,9 @@ void HttpServer::RunServer()
 		Response[i] = new HTTP_BASE();
 		Request[i]->Reset();
 		Response[i]->Reset();
+#ifdef USEMYSQL
 		Mysql[i] = new db::MysqlConnector();
+#endif
 	}
 	//初始化mysql
 	//初始化运行线程
@@ -82,7 +84,7 @@ bool SetNonblockingSocket(Socket socket)
 	int f = fcntl(socket, F_GETFL);
 	if (f < 0)return false;
 	f |= O_NONBLOCK;
-	if (fcntl(socket, F_SETFL, flags) < 0)
+	if (fcntl(socket, F_SETFL, f) < 0)
 		return false;
 	return true;
 #endif // ___WIN32_
@@ -166,10 +168,10 @@ void HttpServer::runSocket(Socket socketfd, int id)
 	auto start = chrono::steady_clock::now();
 	while (true)
 	{
-		int err = select_isRead(socketfd, 0, 2000);
+		int err = select_isRead(socketfd, 0, 1000);
 		if (err < 0)
 		{
-			SERVERPRINT_INFO << "select错误" << socketfd <<" " << err  <<" " << WSAGetLastError() << endl;
+			SERVERPRINT_INFO << "select  failed" << socketfd <<" " << err  <<" " << endl;
 			break;
 		}
 		//接收数据
@@ -178,7 +180,7 @@ void HttpServer::runSocket(Socket socketfd, int id)
 			err = recvSocket(socketfd, quest);
 			if (err < 0)
 			{
-				SERVERPRINT_INFO << "接收时错误" << err << endl;
+				SERVERPRINT_INFO << "recv err" << err << endl;
 				break;
 			}
 		}
@@ -201,7 +203,7 @@ void HttpServer::runSocket(Socket socketfd, int id)
 			reponse->state = S_FREE;
 			if (quest->state == R_ERROR)
 			{
-				SERVERPRINT_INFO << "处理请求错误" << socketfd << endl;
+				SERVERPRINT_INFO << "quest err" << socketfd << endl;
 				break;
 			}
 			else if (quest->Connection == "close")
@@ -243,7 +245,7 @@ void HttpServer::runSocket(Socket socketfd, int id)
 
 	ConnectCount--;
 
-	SERVERPRINT_INFO << "关闭socket" << socketfd << " 当前连接:" << ConnectCount << "|" << Socketfds.size() << endl;
+	SERVERPRINT_INFO << "close socket" << socketfd << " connect :" << ConnectCount << "|" << Socketfds.size() << endl;
 
 #ifdef ___WIN32_
 	shutdown(socketfd, SD_BOTH);
@@ -261,7 +263,7 @@ void HttpServer::RunAccept()
 {
 	while (true)
 	{
-		int value = select_isRead(Listenfd, 0, 5000);
+		int value = select_isRead(Listenfd, 0, 2000);
 		if (value == 0)continue;
 		socklen_t clen = sizeof(sockaddr);
 		sockaddr_in clientAddr;
@@ -270,7 +272,7 @@ void HttpServer::RunAccept()
 		if (socketfd < 0)
 		{
 			if (errno == ENFILE)continue;
-			SERVERPRINT_INFO << "连接时 socket 错误" << endl;
+			SERVERPRINT_INFO << "accept socket err" << endl;
 			continue;
 		}
 
@@ -279,7 +281,7 @@ void HttpServer::RunAccept()
 			Socketfds.emplace_back(socketfd);
 		}
 		ConnectCount++;
-		SERVERPRINT_INFO << "连接数" << ConnectCount << " 队列: " << Socketfds.size() << endl;
+		SERVERPRINT_INFO << "Connect " << ConnectCount << "queue:" << Socketfds.size() << endl;
 
 		//通知工作线程
 		Condition.notify_one();
@@ -306,7 +308,7 @@ int HttpServer::sendSocket(Socket socketfd, HTTP_BASE* reponse, int id)
 		}
 		return 0;
 	}
-	SERVERPRINT_INFO << "发送错误: " << len  << "|" << sendBytes << endl;
+	SERVERPRINT_INFO << "send err: " << len  << "|" << sendBytes << endl;
 #ifdef ___WIN32_
 	if (sendBytes < 0)
 	{
@@ -322,8 +324,8 @@ int HttpServer::sendSocket(Socket socketfd, HTTP_BASE* reponse, int id)
 #else
 	if (sendBytes < 0)
 	{
-		if (err == EINTR)return 0;
-		else if (err == EAGAIN)return 0;
+		if (errno == EINTR)return 0;
+		else if (errno == EAGAIN)return 0;
 		else return -1;
 	}
 	else if (sendBytes == 0)
@@ -352,15 +354,16 @@ void HttpServer::run(HttpServer* s, int id)
 {
 	Socket socketfd = -1;
 	
-
+#ifdef USEMYSQL
 	bool isconnectmysql = s->Mysql[id]->ConnectMySql(s->mysqlIP,s->mysqlUsername, s->mysqlPassword, s->Dbname, s->mysqlPort);
 	if (!isconnectmysql)
 	{
-		SERVERPRINT_INFO << "线程id:" << id << "连接mysql失败" << s->Mysql[id]->GetErrorStr() << endl;
+		SERVERPRINT_INFO << "Thread id:" << id << "Connect mysql field" << s->Mysql[id]->GetErrorStr() << endl;
 		return;
 	}
-	SERVERPRINT_INFO << "线程id:" << id << "连接mysql成功" << endl;
-	SERVERPRINT_INFO << "工作线程开启" << id << endl;
+	SERVERPRINT_INFO << "Thread id:" << id << "Connect mysql finish" << endl;
+#endif
+	SERVERPRINT_INFO << "Work Thread start" << id << endl;
    while (true)
 	{
 		{
@@ -377,7 +380,7 @@ void HttpServer::run(HttpServer* s, int id)
 		}
 
 		//进行处理
-		SERVERPRINT_INFO << "处理数据 " << endl;
+		SERVERPRINT_INFO << "thread working " << endl;
 		s->runSocket(socketfd, id);
 
 	}

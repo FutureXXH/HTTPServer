@@ -4,7 +4,13 @@
 #include <atomic>
 #include <chrono>
 #include "MyJson.h"
+
+#ifdef USEMYSQL
+
 #include "MySQLConnector.h"
+
+#endif
+
 using namespace std;
 class HttpServer
 {
@@ -21,9 +27,9 @@ private:
 	HTTP_BASE* Request[MAX_THREAD_COUNT];
 	HTTP_BASE* Response[MAX_THREAD_COUNT];
 
-
+#ifdef USEMYSQL
 	db::MysqlConnector* Mysql[MAX_THREAD_COUNT];
-
+#endif
 	//=================
 	char mysqlIP[20];
 	int mysqlPort;

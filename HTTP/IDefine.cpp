@@ -18,7 +18,7 @@ void initPath()
 
 #endif // ___WIN32_
 	memcpy(FileExePath, str.c_str(), MAX_EXE_LEN);
-	SERVERPRINT_INFO << "当前文件夹:" << FileExePath << std::endl;
+	SERVERPRINT_INFO << "file:" << FileExePath << std::endl;
 }
 
 std::string deleteString(std::string s, char c)
